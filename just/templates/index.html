@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Coach (Most Advanced) | Pro Cricket Analytics</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- MediaPipe Pose CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
+                <div class="logo-text">
+                    <span class="logo-title">AI COACH</span>
+                    <span class="logo-subtitle">MOST ADVANCED</span>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#live-coach" class="nav-item active" data-tab="live-coach">
+                    <i class="fa-solid fa-video"></i>
+                    <span>Live AI Analyzer</span>
+                </a>
+                <a href="#analytics" class="nav-item" data-tab="analytics">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Deep Analytics</span>
+                </a>
+                <a href="#prediction" class="nav-item" data-tab="prediction">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>Match Predictor</span>
+                </a>
+                <a href="#progress-tracker" class="nav-item" data-tab="progress-tracker">
+                    <i class="fa-solid fa-network-wired"></i>
+                    <span>NN Progress Model</span>
+                </a>
+                <a href="#drill-hub" class="nav-item" data-tab="drill-hub">
+                    <i class="fa-solid fa-dumbbell"></i>
+                    <span>Personalized Drills</span>
+                </a>
+                <a href="#profile" class="nav-item" data-tab="profile">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span>Player Profile</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="user-badge">
+                    <div class="user-avatar" id="avatarNameInit">N</div>
+                    <div class="user-info">
+                        <span class="user-name" id="profileNameDisplay">Nawin</span>
+                        <span class="user-role" id="profileRoleDisplay">All-Rounder</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="page-title">Live AI Analyzer</h1>
+                <div class="system-status">
+                    <div class="status-indicator online"></div>
+                    <span class="status-text">AI CORE CONNECTED</span>
+                </div>
+            </header>
+            
+            <div class="tab-wrapper">
+                
+                <!-- 1. LIVE AI ANALYZER TAB -->
+                <section id="live-coach-tab" class="tab-content active">
+                    <div class="grid-2col">
+                        
+                        <!-- Webcam Feed & Skeleton Overlay -->
+                        <div class="card glass video-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-camera neon-text-teal"></i>
+                                    <h3>Computer Vision Core</h3>
+                                </div>
+                                <div class="mode-toggles">
+                                    <button class="btn btn-sm btn-outline active" id="btnBattingMode">
+                                        <i class="fa-solid fa-baseball-bat-ball"></i> Batting
+                                    </button>
+                                    <button class="btn btn-sm btn-outline" id="btnBowlingMode">
+                                        <i class="fa-solid fa-baseball"></i> Bowling
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="webcam-viewport">
+                                <!-- Elements for MediaPipe Pose -->
+                                <video id="webcamVideo" autoplay playsinline muted style="display:none;"></video>
+                                <canvas id="poseCanvas"></canvas>
+                                
+                                <div class="camera-placeholder" id="cameraPlaceholder">
+                                    <i class="fa-solid fa-video-slash placeholder-icon"></i>
+                                    <p>Camera feed inactive. Click 'Start Engine' below to enable Pose Estimation.</p>
+                                </div>
+                                
+                                <!-- Floating HUD -->
+                                <div class="floating-hud" id="hudOverlay" style="display: none;">
+                                    <div class="hud-item calibration">
+                                        <span class="hud-label">CALIBRATION</span>
+                                        <span class="hud-value" id="hudCalibrationText">OK</span>
+                                    </div>
+                                    <div class="hud-item detection">
+                                        <span class="hud-label">DETECTED SHOT</span>
+                                        <span class="hud-value neon-glow-text" id="hudShotText">STANCE</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="controls-bar">
+                                <button class="btn btn-primary" id="btnStartEngine">
+                                    <i class="fa-solid fa-play"></i> Start Engine
+                                </button>
+                                <button class="btn btn-danger" id="btnStopEngine" disabled>
+                                    <i class="fa-solid fa-square-full"></i> Stop Engine
+                                </button>
+                                
+                                <label class="btn btn-outline" id="lblVideoUpload" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer;">
+                                    <i class="fa-solid fa-file-video neon-text-teal"></i> Upload Video
+                                    <input type="file" id="videoUploadInput" accept="video/*" style="display: none;">
+                                </label>
+                                
+                                <div class="fps-counter">
+                                    <span>Engine Latency:</span> <strong id="latencyDisplay" class="neon-text-teal">-- ms</strong>
+                                </div>
+                            </div>
+                            
+                            <!-- Video AI Analysis Progress Bar -->
+                            <div class="video-analysis-loading" id="videoAnalysisProgress" style="display: none; margin-top: 15px; background: rgba(255,255,255,0.01); border: 1px dashed rgba(0, 242, 254, 0.2); padding: 12px; border-radius: 8px;">
+                                <div class="progress-bar-status" style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px;">
+                                    <span>AI Video Mechanics Analysis: <strong id="analyzedFramesCount" class="neon-text-teal">0</strong> frames processed</span>
+                                    <span id="analysisBadge" class="badge badge-outline">ANALYZING</span>
+                                </div>
+                                <div class="progress-container" style="height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; margin-bottom: 10px;">
+                                    <div class="progress-bar bar-teal" id="videoAnalysisBar" style="width: 0%; height: 100%; transition: width 0.3s ease;"></div>
+                                </div>
+                                <button class="btn btn-sm btn-magenta btn-block" id="btnGenerateReport" disabled>
+                                    <i class="fa-solid fa-square-poll-vertical"></i> Generate Weakness & Training Regimen
+                                </button>
+                            </div>
+
+                            <!-- AI Weakness & Training Regimen Report Card -->
+                            <div class="card glass report-card mt-20" id="videoReportCard" style="display: none; border-top: 4px solid var(--neon-red); background: rgba(6, 10, 22, 0.95); z-index: 10;">
+                                <div class="card-header" style="margin-bottom: 10px;">
+                                    <div class="card-title-group">
+                                        <i class="fa-solid fa-microchip neon-text-red"></i>
+                                        <h3 class="neon-text-red">AI Biomechanics Weakness Report</h3>
+                                    </div>
+                                    <span class="badge badge-danger">DIAGNOSED</span>
+                                </div>
+                                <div class="report-body">
+                                    <h4 id="reportTitle" style="font-size: 15px; color: #ffffff; margin-top: 10px; font-family: var(--font-tech);">Restricted Front Foot Stride Extension</h4>
+                                    
+                                    <div class="comparison-row" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 15px 0; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                                        <div class="comp-box" style="text-align: center;">
+                                            <span class="comp-label" style="font-size: 8px; color: var(--color-text-muted); display: block; font-family: var(--font-tech);">YOUR AVERAGE</span>
+                                            <strong id="reportYourVal" class="neon-text-red" style="font-size: 18px; font-family: var(--font-tech);">0.95m</strong>
+                                        </div>
+                                        <div class="comp-arrow" style="color: var(--color-text-muted); font-size: 14px;"><i class="fa-solid fa-arrow-right-long"></i></div>
+                                        <div class="comp-box" style="text-align: center;">
+                                            <span class="comp-label" style="font-size: 8px; color: var(--color-text-muted); display: block; font-family: var(--font-tech);">PRO BENCHMARK</span>
+                                            <strong id="reportTargetVal" class="neon-text-teal" style="font-size: 18px; font-family: var(--font-tech);">1.30m</strong>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="report-text" id="reportImpactText" style="font-size: 12px; line-height: 1.4; color: var(--color-text-main); margin-bottom: 20px; background: rgba(255,42,95,0.03); border-left: 2px solid var(--neon-red); padding: 8px 12px;">
+                                        Restricting your stride shifts your center of gravity backward, causing you to reach for the ball. This compromises your swing plane, reduces power by 30%, and makes you highly vulnerable to caught-behind or slip catches.
+                                    </p>
+                                    
+                                    <div class="divider"></div>
+                                    
+                                    <div class="training-structure-section" style="margin-top: 15px;">
+                                        <h4 class="neon-text-teal" style="font-size: 12px; font-family: var(--font-tech); text-transform: uppercase; margin-bottom: 12px;">
+                                            <i class="fa-solid fa-calendar-days"></i> Structured 7-Day Training Regimen
+                                        </h4>
+                                        
+                                        <div class="schedule-grid" style="display: flex; flex-direction: column; gap: 12px;">
+                                            <div class="schedule-day" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 8px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                                    <span class="day-num" style="font-family: var(--font-tech); font-size: 10px; font-weight: 700; color: var(--neon-teal);">DAYS 1-2</span>
+                                                    <span class="day-phase" id="reportPhase1Name" style="font-size: 11px; font-weight: 600; color: #ffffff;">Phase 1: Shadow Stride Alignment</span>
+                                                </div>
+                                                <p class="day-desc" id="reportPhase1Desc" style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3;">3 sets of 15 repetitions. Place a tape line at 1.3 meters. Shadow practice striding exactly onto the tape line without swing.</p>
+                                            </div>
+                                            <div class="schedule-day" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 8px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                                    <span class="day-num" style="font-family: var(--font-tech); font-size: 10px; font-weight: 700; color: var(--neon-teal);">DAYS 3-4</span>
+                                                    <span class="day-phase" id="reportPhase2Name" style="font-size: 11px; font-weight: 600; color: #ffffff;">Phase 2: Stationary Tee Drills</span>
+                                                </div>
+                                                <p class="day-desc" id="reportPhase2Desc" style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3;">4 sets of 10 drives. Place a ball on a batting tee positioned 1.3m from stance. Step, plant foot firmly, and drive.</p>
+                                            </div>
+                                            <div class="schedule-day" style="background: rgba(255,255,255,0.015); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 8px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                                    <span class="day-num" style="font-family: var(--font-tech); font-size: 10px; font-weight: 700; color: var(--neon-teal);">DAYS 5-7</span>
+                                                    <span class="day-phase" id="reportPhase3Name" style="font-size: 11px; font-weight: 600; color: #ffffff;">Phase 3: Underarm Drop Drives</span>
+                                                </div>
+                                                <p class="day-desc" id="reportPhase3Desc" style="font-size: 11px; color: var(--color-text-muted); line-height: 1.3;">50 balls per session. Partner drops balls from close distance, forcing front foot stride before hitting.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-20" style="display: flex; gap: 10px; margin-top: 20px;">
+                                        <button class="btn btn-primary" id="btnInjectRegimen" style="flex: 1;">
+                                            <i class="fa-solid fa-circle-plus"></i> Inject Regimen into Drill Hub
+                                        </button>
+                                        <button class="btn btn-outline" id="btnDismissReport">
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Real-time Biometric Telemetry -->
+                        <div class="card glass telemetry-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-gauge-high neon-text-teal"></i>
+                                    <h3>Bio-Metric Telemetry</h3>
+                                </div>
+                                <span class="badge badge-teal">REAL-TIME</span>
+                            </div>
+                            
+                            <div class="telemetry-grid">
+                                <div class="gauge-box">
+                                    <div class="gauge-container">
+                                        <svg class="radial-gauge" viewBox="0 0 100 100">
+                                            <circle class="bg" cx="50" cy="50" r="40"></circle>
+                                            <circle class="meter meter-teal" id="gaugeStanceMeter" cx="50" cy="50" r="40" stroke-dasharray="251" stroke-dashoffset="251"></circle>
+                                        </svg>
+                                        <div class="gauge-val" id="gaugeStanceValue">0%</div>
+                                    </div>
+                                    <span class="gauge-title">Stance Stability</span>
+                                </div>
+                                
+                                <div class="gauge-box">
+                                    <div class="gauge-container">
+                                        <svg class="radial-gauge" viewBox="0 0 100 100">
+                                            <circle class="bg" cx="50" cy="50" r="40"></circle>
+                                            <circle class="meter meter-teal" id="gaugeStrideMeter" cx="50" cy="50" r="40" stroke-dasharray="251" stroke-dashoffset="251"></circle>
+                                        </svg>
+                                        <div class="gauge-val" id="gaugeStrideValue">0.0m</div>
+                                    </div>
+                                    <span class="gauge-title" id="strideTitle">Footwork Stride</span>
+                                </div>
+                                
+                                <div class="gauge-box">
+                                    <div class="gauge-container">
+                                        <svg class="radial-gauge" viewBox="0 0 100 100">
+                                            <circle class="bg" cx="50" cy="50" r="40"></circle>
+                                            <circle class="meter meter-teal" id="gaugeSpeedMeter" cx="50" cy="50" r="40" stroke-dasharray="251" stroke-dashoffset="251"></circle>
+                                        </svg>
+                                        <div class="gauge-val" id="gaugeSpeedValue">0°/s</div>
+                                    </div>
+                                    <span class="gauge-title" id="speedTitle">Swing Speed</span>
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <div class="angle-feed">
+                                <h4>Joint Angle Analysis</h4>
+                                <div class="angle-bars">
+                                    <div class="angle-bar-row">
+                                        <span class="angle-name">Front Knee Bend</span>
+                                        <div class="progress-container">
+                                            <div class="progress-bar bar-teal" id="barFrontKnee" style="width: 0%;"></div>
+                                        </div>
+                                        <span class="angle-val" id="valFrontKnee">180°</span>
+                                    </div>
+                                    
+                                    <div class="angle-bar-row">
+                                        <span class="angle-name">Backlift Elbow</span>
+                                        <div class="progress-container">
+                                            <div class="progress-bar bar-teal" id="barElbow" style="width: 0%;"></div>
+                                        </div>
+                                        <span class="angle-val" id="valElbow">180°</span>
+                                    </div>
+                                    
+                                    <div class="angle-bar-row">
+                                        <span class="angle-name">Spine Alignment Tilt</span>
+                                        <div class="progress-container">
+                                            <div class="progress-bar bar-teal" id="barSpine" style="width: 0%;"></div>
+                                        </div>
+                                        <span class="angle-val" id="valSpine">0°</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="hud-feedback-log">
+                                <h4>Session Detection History</h4>
+                                <ul class="session-log-list" id="liveSessionLogger">
+                                    <li class="empty-item">No actions detected yet. Start practice.</li>
+                                </ul>
+                                <button class="btn btn-sm btn-outline btn-block mt-10" id="btnSavePracticeSession" disabled>
+                                    <i class="fa-solid fa-floppy-disk"></i> Log Practice Session
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 2. DEEP ANALYTICS TAB -->
+                <section id="analytics-tab" class="tab-content">
+                    <div class="grid-2col">
+                        <!-- Radar Chart -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-shield-halved neon-text-green"></i>
+                                    <h3>Player Weakness & Bio-Mechanics Radar</h3>
+                                </div>
+                            </div>
+                            <div class="radar-chart-container">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Weakness Analysis & Bio-Mechanic Diagnosis -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-triangle-exclamation neon-text-green"></i>
+                                    <h3>AI Weakness Diagnosis</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="weakness-summary">
+                                <div class="weakness-item warning">
+                                    <div class="weakness-icon">
+                                        <i class="fa-solid fa-person-falling"></i>
+                                    </div>
+                                    <div class="weakness-desc">
+                                        <h5>Defensive Footwork Stride</h5>
+                                        <p>Footwork extension is 25% shorter than target for defensive shots. Causes reach-chasing and edges.</p>
+                                    </div>
+                                    <span class="severity high">HIGH</span>
+                                </div>
+                                
+                                <div class="weakness-item warning">
+                                    <div class="weakness-icon">
+                                        <i class="fa-solid fa-baseball-bat-ball"></i>
+                                    </div>
+                                    <div class="weakness-desc">
+                                        <h5>Cover Drive Shoulder Tilt</h5>
+                                        <p>Shoulder line dips past optimal 15 degrees during bat contact. Limits shot power and control.</p>
+                                    </div>
+                                    <span class="severity medium">MED</span>
+                                </div>
+                                
+                                <div class="weakness-item warning">
+                                    <div class="weakness-icon">
+                                        <i class="fa-solid fa-bolt"></i>
+                                    </div>
+                                    <div class="weakness-desc">
+                                        <h5>Bowling Release Height Consistency</h5>
+                                        <p>Release height fluctuates by 8.4cm. Leads to inconsistent pitch length control.</p>
+                                    </div>
+                                    <span class="severity low">LOW</span>
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <div class="quick-remedy">
+                                <h4>AI Recommendations</h4>
+                                <div class="remedy-bubble">
+                                    <i class="fa-solid fa-circle-info neon-text-green"></i>
+                                    <p>Practice the <strong>"Front Foot Cover Drive Shadow Batting"</strong> drill twice daily to enforce optimal stance extension and hip alignment.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Practice Session Database View -->
+                    <div class="card glass mt-20">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <i class="fa-solid fa-database neon-text-green"></i>
+                                <h3>Practice Session Logs</h3>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="session-table" id="sessionTable">
+                                <thead>
+                                    <tr>
+                                        <th>Session ID</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Shot/Bowling style</th>
+                                        <th>Stability / Speed</th>
+                                        <th>Footwork / Release Ht</th>
+                                        <th>Swing Speed / Arm Rot</th>
+                                        <th>Coach Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic rows loaded from Flask database -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 3. MATCH PREDICTOR TAB -->
+                <section id="prediction-tab" class="tab-content">
+                    <div class="predictor-description">
+                        <h3>AI Next-Match Performance Predictor</h3>
+                        <p>Powered by a backend <strong>scikit-learn Linear Regression model</strong>. The model analyzes your average training results, recent match parameters, and weekly preparation hours to generate predictions for your next competitive performance.</p>
+                    </div>
+                    
+                    <div class="grid-2col">
+                        <!-- Sliders Panel -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-sliders neon-text-magenta"></i>
+                                    <h3>Predictor Input Features</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="slider-group">
+                                <div class="slider-row">
+                                    <div class="slider-label-group">
+                                        <span>Average Practice Score</span>
+                                        <strong id="valAvgScore" class="neon-text-magenta">80%</strong>
+                                    </div>
+                                    <input type="range" class="range-slider" id="slideAvgScore" min="50" max="100" value="80">
+                                    <span class="range-subtext">Average performance score computed from live camera session logs</span>
+                                </div>
+                                
+                                <div class="slider-row">
+                                    <div class="slider-label-group">
+                                        <span>Recent Match Runs (Avg)</span>
+                                        <strong id="valRecentRuns" class="neon-text-magenta">45</strong>
+                                    </div>
+                                    <input type="range" class="range-slider" id="slideRecentRuns" min="0" max="120" value="45">
+                                </div>
+                                
+                                <div class="slider-row">
+                                    <div class="slider-label-group">
+                                        <span>Recent Match Strike Rate (Avg)</span>
+                                        <strong id="valRecentSR" class="neon-text-magenta">120</strong>
+                                    </div>
+                                    <input type="range" class="range-slider" id="slideRecentSR" min="50" max="220" value="120">
+                                </div>
+                                
+                                <div class="slider-row">
+                                    <div class="slider-label-group">
+                                        <span>Recent Match Wickets (Avg)</span>
+                                        <strong id="valRecentWickets" class="neon-text-magenta">1.2</strong>
+                                    </div>
+                                    <input type="range" class="range-slider" id="slideRecentWickets" min="0.0" max="5.0" step="0.1" value="1.2">
+                                </div>
+                                
+                                <div class="slider-row">
+                                    <div class="slider-label-group">
+                                        <span>Weekly Training Hours</span>
+                                        <strong id="valTrainingHours" class="neon-text-magenta">6 hrs</strong>
+                                    </div>
+                                    <input type="range" class="range-slider" id="slideTrainingHours" min="1" max="20" value="6">
+                                </div>
+                                
+                                <button class="btn btn-magenta btn-block mt-20" id="btnRunPrediction">
+                                    <i class="fa-solid fa-microchip"></i> Compute Match Prediction
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Prediction Output / UI Dashboard -->
+                        <div class="card glass prediction-results-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-bullseye neon-text-magenta"></i>
+                                    <h3>Predicted Performance</h3>
+                                </div>
+                                <span class="badge badge-magenta" id="predStatus">READY</span>
+                            </div>
+                            
+                            <div class="prediction-stats-grid">
+                                <div class="pred-stat-box">
+                                    <span class="pred-title">Runs Forecast</span>
+                                    <span class="pred-value neon-glow-text-magenta" id="predRuns">--</span>
+                                    <span class="pred-unit">runs</span>
+                                </div>
+                                <div class="pred-stat-box">
+                                    <span class="pred-title">Strike Rate Forecast</span>
+                                    <span class="pred-value neon-glow-text-magenta" id="predSR">--</span>
+                                    <span class="pred-unit">runs/100b</span>
+                                </div>
+                                <div class="pred-stat-box">
+                                    <span class="pred-title">Wickets Forecast</span>
+                                    <span class="pred-value neon-glow-text-magenta" id="predWickets">--</span>
+                                    <span class="pred-unit">wickets</span>
+                                </div>
+                                <div class="pred-stat-box">
+                                    <span class="pred-title">Economy Rate</span>
+                                    <span class="pred-value neon-glow-text-magenta" id="predEconomy">--</span>
+                                    <span class="pred-unit">runs/over</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Impact Score Radial Indicator -->
+                            <div class="impact-indicator-section">
+                                <div class="impact-card">
+                                    <span class="impact-title">Overall Impact Rating</span>
+                                    <div class="impact-display">
+                                        <span id="predImpact" class="neon-glow-text-magenta">--</span>
+                                        <span class="total-impact">/10</span>
+                                    </div>
+                                    <div class="impact-bar-container">
+                                        <div class="impact-bar" id="predImpactBar" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="divider"></div>
+                            
+                            <!-- Feature Importances (From Scikit-Learn Model Coefficients) -->
+                            <div class="importance-section">
+                                <h4>Linear Model Coefficient Impact (Feature Weights)</h4>
+                                <ul class="importance-list" id="featureWeightsList">
+                                    <li class="empty-item">Run prediction model to extract ML weights.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 4. NEURAL NETWORK PROGRESS MODEL TAB -->
+                <section id="progress-tracker-tab" class="tab-content">
+                    <div class="predictor-description">
+                        <h3>Visual Neural Network progress tracking (Deep Learning Sandbox)</h3>
+                        <p>This is a custom client-side <strong>Artificial Neural Network (ANN)</strong>. The model trains directly in your browser using backpropagation. It reads inputs from your past session scores, stability, stride length, and bowling speeds to output a predicted continuous <strong>Player Rating Index</strong>. You can customize the network architecture, adjust hyperparameters, and watch the model train in real-time.</p>
+                    </div>
+                    
+                    <div class="grid-3col">
+                        <!-- Column 1: Hyperparameters & Training Controls -->
+                        <div class="card glass nn-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-sliders neon-text-magenta"></i>
+                                    <h3>Hyperparameters</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="hyper-form">
+                                <div class="control-row">
+                                    <label for="nnEpochs">Training Epochs</label>
+                                    <select class="form-select" id="nnEpochs">
+                                        <option value="100">100 Epochs</option>
+                                        <option value="200" selected>200 Epochs</option>
+                                        <option value="500">500 Epochs</option>
+                                        <option value="1000">1000 Epochs</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="control-row">
+                                    <label for="nnLR">Learning Rate (η)</label>
+                                    <select class="form-select" id="nnLR">
+                                        <option value="0.01">0.01 (Slow & Stable)</option>
+                                        <option value="0.05" selected>0.05 (Balanced)</option>
+                                        <option value="0.1">0.1 (Fast Convergence)</option>
+                                        <option value="0.3">0.3 (Aggressive)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="control-row">
+                                    <label for="nnHiddenNodes">Hidden Layers</label>
+                                    <select class="form-select" id="nnHiddenNodes">
+                                        <option value="3">3 Neurons (Sparse)</option>
+                                        <option value="4" selected>4 Neurons (Optimal)</option>
+                                        <option value="5">5 Neurons (Complex)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="divider"></div>
+                                
+                                <div class="nn-status-panel">
+                                    <h4>Training Status</h4>
+                                    <div class="nn-status-item">
+                                        <span>Current Epoch:</span>
+                                        <strong id="nnEpochDisplay" class="neon-text-magenta">0</strong>
+                                    </div>
+                                    <div class="nn-status-item">
+                                        <span>Training Loss:</span>
+                                        <strong id="nnLossDisplay" class="neon-text-magenta">0.0000</strong>
+                                    </div>
+                                    <div class="nn-status-item">
+                                        <span>Model State:</span>
+                                        <span class="badge badge-outline" id="nnStatusBadge">UNTRAINED</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-20">
+                                    <button class="btn btn-magenta btn-block" id="btnTrainNN">
+                                        <i class="fa-solid fa-gears"></i> Train Neural Network
+                                    </button>
+                                    <button class="btn btn-outline btn-block mt-10" id="btnResetNN">
+                                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset Weights
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Column 2: Live Network Visualizer Canvas -->
+                        <div class="card glass nn-visualizer-card span-col-2">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-diagram-project neon-text-magenta"></i>
+                                    <h3>Neural Network Live Node Graph</h3>
+                                </div>
+                                <span class="badge badge-magenta animate-pulse" id="nnWiringStatus">WIRING ACTIVE</span>
+                            </div>
+                            
+                            <div class="nn-canvas-container">
+                                <canvas id="nnCanvas"></canvas>
+                                
+                                <div class="canvas-legend">
+                                    <span class="legend-item"><span class="legend-dot blue"></span> Positive Weight</span>
+                                    <span class="legend-item"><span class="legend-dot red"></span> Negative Weight</span>
+                                    <span class="legend-item"><span class="legend-dot pulsing"></span> Synapse Signal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2col mt-20">
+                        <!-- Column 1: Live Loss Curve -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-chart-line neon-text-magenta"></i>
+                                    <h3>Model Loss Curve (Mean Squared Error)</h3>
+                                </div>
+                            </div>
+                            <div class="loss-chart-container">
+                                <canvas id="lossChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Column 2: Progress Prediction Engine -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-wand-magic-sparkles neon-text-magenta"></i>
+                                    <h3>Test Progress Engine</h3>
+                                </div>
+                            </div>
+                            <div class="nn-test-panel">
+                                <p class="mb-10 text-muted">Input sample telemetry to query the newly trained Neural Network model directly.</p>
+                                
+                                <div class="grid-2col">
+                                    <div class="control-row">
+                                        <label for="nnTestStability">Stance Stability (%)</label>
+                                        <input type="number" class="form-control" id="nnTestStability" min="50" max="100" value="82">
+                                    </div>
+                                    
+                                    <div class="control-row">
+                                        <label for="nnTestStride">Footwork Stride (m)</label>
+                                        <input type="number" class="form-control" id="nnTestStride" min="0.5" max="2.0" step="0.1" value="1.4">
+                                    </div>
+                                </div>
+                                
+                                <div class="grid-2col mt-10">
+                                    <div class="control-row">
+                                        <label for="nnTestSpeed">Swing Speed (°/s)</label>
+                                        <input type="number" class="form-control" id="nnTestSpeed" min="200" max="800" value="480">
+                                    </div>
+                                    
+                                    <div class="control-row">
+                                        <label for="nnTestScore">Previous Score (0-100)</label>
+                                        <input type="number" class="form-control" id="nnTestScore" min="50" max="100" value="85">
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-outline btn-block mt-20" id="btnQueryNN" disabled>
+                                    Query Trained Network
+                                </button>
+                                
+                                <div class="prediction-output-box mt-20">
+                                    <span class="output-label">Neural Network Predicted Progress Index</span>
+                                    <h2 class="output-value neon-glow-text-magenta" id="nnPredictedIndex">--</h2>
+                                    <p class="output-rating-text" id="nnPredictedText">Model not trained. Complete training to run predictions.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 5. PERSONALIZED DRILLS TAB -->
+                <section id="drill-hub-tab" class="tab-content">
+                    <div class="grid-2col">
+                        <!-- AI Coach Advisor chatbot -->
+                        <div class="card glass chat-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-robot neon-text-teal"></i>
+                                    <h3>AI Coach Advisor</h3>
+                                </div>
+                                <span class="badge badge-teal">ACTIVE</span>
+                            </div>
+                            
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="chat-bubble coach">
+                                    <div class="chat-avatar">C</div>
+                                    <div class="chat-text">
+                                        <p>Hello Nawin! I am your AI Coach. I have analyzed your biometric data and radar weakness chart. How can I help you improve your batting or bowling technique today?</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-area">
+                                <input type="text" class="chat-input" id="chatInputInput" placeholder="Ask about Cover Drive drills, bowling release tips...">
+                                <button class="btn btn-primary" id="btnChatSend">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Assigned Drills -->
+                        <div class="card glass drill-list-card">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-list-check neon-text-teal"></i>
+                                    <h3>Your Daily Training Drills</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="drill-list-items" id="drillListItems">
+                                <div class="drill-box">
+                                    <div class="drill-meta">
+                                        <span class="badge badge-danger">CRITICAL</span>
+                                        <span class="drill-duration"><i class="fa-regular fa-clock"></i> 20 mins</span>
+                                    </div>
+                                    <h4>Front Foot Stride Drill (Cover Drive)</h4>
+                                    <p>Place a marker 1.2m ahead of stance. Practice striding front foot completely to marker while executing shadow Cover Drive swings, aligning shoulder to ball path.</p>
+                                    <div class="drill-target">
+                                        <i class="fa-solid fa-circle-check"></i> Target Benchmark: Stride Extension &gt;= 1.25m
+                                    </div>
+                                </div>
+                                
+                                <div class="drill-box">
+                                    <div class="drill-meta">
+                                        <span class="badge badge-warning">RECOMMENDED</span>
+                                        <span class="drill-duration"><i class="fa-regular fa-clock"></i> 15 mins</span>
+                                    </div>
+                                    <h4>High Elbow Shadow Defense</h4>
+                                    <p>Conduct 30 defensive blocks in front of a mirror. Focus on maintaining a vertical bat line, high top-hand elbow, and compact stance with front knee bent.</p>
+                                    <div class="drill-target">
+                                        <i class="fa-solid fa-circle-check"></i> Target Benchmark: Stance Stability &gt; 85%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- 6. PLAYER PROFILE TAB -->
+                <section id="profile-tab" class="tab-content">
+                    <div class="grid-2col">
+                        <!-- Profile Form -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-user-pen neon-text-green"></i>
+                                    <h3>Edit Player Profile</h3>
+                                </div>
+                            </div>
+                            
+                            <form id="profileForm" class="profile-form">
+                                <div class="control-row">
+                                    <label for="profileName">Player Name</label>
+                                    <input type="text" class="form-control" id="profileName" value="Nawin" required>
+                                </div>
+                                
+                                <div class="control-row">
+                                    <label for="profileRole">Player Role</label>
+                                    <select class="form-select" id="profileRole">
+                                        <option value="Batsman">Batsman</option>
+                                        <option value="Bowler">Bowler</option>
+                                        <option value="All-Rounder" selected>All-Rounder</option>
+                                        <option value="Wicket-keeper Batsman">Wicket-keeper Batsman</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="control-row">
+                                    <label for="profileExperience">Experience Level</label>
+                                    <select class="form-select" id="profileExperience">
+                                        <option value="Beginner">Beginner</option>
+                                        <option value="Intermediate" selected>Intermediate</option>
+                                        <option value="Advanced">Advanced (Club)</option>
+                                        <option value="Professional">Professional</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="grid-2col">
+                                    <div class="control-row">
+                                        <label for="profileBattingHand">Batting Stance</label>
+                                        <select class="form-select" id="profileBattingHand">
+                                            <option value="Right-Handed" selected>Right-Handed</option>
+                                            <option value="Left-Handed">Left-Handed</option>
+                                        </select>
+                                    </div>
+                                    <div class="control-row">
+                                        <label for="profileBowlingStyle">Bowling Style</label>
+                                        <select class="form-select" id="profileBowlingStyle">
+                                            <option value="Right-Arm Fast Medium" selected>Right-Arm Fast</option>
+                                            <option value="Right-Arm Off Spin">Right-Arm Off Spin</option>
+                                            <option value="Right-Arm Leg Spin">Right-Arm Leg Spin</option>
+                                            <option value="Left-Arm Fast">Left-Arm Fast</option>
+                                            <option value="Left-Arm Spin">Left-Arm Spin</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-block mt-20">
+                                    <i class="fa-solid fa-floppy-disk"></i> Update Profile Settings
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <!-- Profile Dashboard Summary Cards -->
+                        <div class="card glass">
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <i class="fa-solid fa-award neon-text-green"></i>
+                                    <h3>Bio-Metric Performance Badges</h3>
+                                </div>
+                            </div>
+                            
+                            <div class="badges-grid">
+                                <div class="badge-card-premium gold">
+                                    <div class="badge-icon-premium">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </div>
+                                    <div class="badge-details">
+                                        <h4>Stance Master</h4>
+                                        <p>Stability exceeds 85% in defensive shots.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="badge-card-premium silver">
+                                    <div class="badge-icon-premium">
+                                        <i class="fa-solid fa-gauge"></i>
+                                    </div>
+                                    <div class="badge-details">
+                                        <h4>Speed Demon</h4>
+                                        <p>Bat swing speed exceeded 600°/sec.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="badge-card-premium copper locked">
+                                    <div class="badge-icon-premium">
+                                        <i class="fa-solid fa-lock"></i>
+                                    </div>
+                                    <div class="badge-details">
+                                        <h4>Bowling Precision</h4>
+                                        <p>Lock release height within 2cm drift. (Locked)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script src="{{ url_for('static', filename='js/pose.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/analysis.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ai_model.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/coach.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+[
+    {
+        "id": 1,
+        "date": "2026-07-01",
+        "type": "batting",
+        "shot": "Defensive Block",
+        "metric1": 65,
+        "metric2": 80,
+        "metric3": 75,
+        "score": 73
+    },
+    {
+        "id": 2,
+        "date": "2026-07-02",
+        "type": "batting",
+        "shot": "Cover Drive",
+        "metric1": 70,
+        "metric2": 72,
+        "metric3": 68,
+        "score": 70
+    },
+    {
+        "id": 3,
+        "date": "2026-07-03",
+        "type": "bowling",
+        "shot": "Fast Bowling",
+        "metric1": 115,
+        "metric2": 82,
+        "metric3": 70,
+        "score": 76
+    },
+    {
+        "id": 4,
+        "date": "2026-07-05",
+        "type": "batting",
+        "shot": "Cover Drive",
+        "metric1": 78,
+        "metric2": 85,
+        "metric3": 80,
+        "score": 81
+    },
+    {
+        "id": 5,
+        "date": "2026-07-06",
+        "type": "batting",
+        "shot": "Pull Shot",
+        "metric1": 82,
+        "metric2": 75,
+        "metric3": 85,
+        "score": 80
+    },
+    {
+        "id": 6,
+        "date": "2026-07-08",
+        "type": "bowling",
+        "shot": "Spin Bowling",
+        "metric1": 78,
+        "metric2": 85,
+        "metric3": 85,
+        "score": 83
+    },
+    {
+        "id": 7,
+        "date": "2026-07-10",
+        "type": "batting",
+        "shot": "Sweep Shot",
+        "metric1": 85,
+        "metric2": 88,
+        "metric3": 90,
+        "score": 88
+    },
+    {
+        "id": 8,
+        "date": "2026-07-11",
+        "type": "bowling",
+        "shot": "Fast Bowling",
+        "metric1": 122,
+        "metric2": 89,
+        "metric3": 78,
+        "score": 87
+    }
+]

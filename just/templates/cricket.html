@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CricIQ — Live Match Intelligence</title>
+  <meta name="description" content="Real-time T20 cricket score prediction powered by Hawkeye pitch analysis and adaptive machine learning. Predicts final score with confidence intervals that improve with every match.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cricket.css') }}">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOADING OVERLAY
+═══════════════════════════════════════════════════════════════ -->
+<div id="loadingOverlay">
+  <div class="loader-ring"></div>
+  <div class="loader-text">INITIALISING MATCH SIMULATION…</div>
+  <div style="font-size:12px;color:#4D5F80;margin-top:4px">Starting ball-by-ball engine</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════════════ -->
+<header class="cr-header">
+  <a class="cr-header__logo" href="/">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="13" stroke="#00D4FF" stroke-width="1.5"/>
+      <path d="M7 14 C7 10 10 7 14 7 C18 7 21 10 21 14" stroke="#00D4FF" stroke-width="1.5" fill="none"/>
+      <circle cx="14" cy="14" r="3" fill="#00D4FF"/>
+      <line x1="14" y1="14" x2="21" y2="8" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    CricIQ
+  </a>
+
+  <div class="cr-header__title">
+    <strong id="matchName">Loading match…</strong>
+    <span id="matchVenue"></span>
+  </div>
+
+  <div class="cr-header__nav">
+    <div class="live-badge" id="liveBadge">
+      <span class="pulse"></span>LIVE
+    </div>
+    <span class="status-badge loading" id="statusBadge">LOADING</span>
+    <a class="back-btn" href="/">← Back</a>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCORE BANNER
+═══════════════════════════════════════════════════════════════ -->
+<div class="cr-score-banner">
+  <div class="cr-score-banner__inner">
+
+    <!-- Batting team -->
+    <div class="team-score">
+      <div class="team-badge" id="batTeamBadge">?</div>
+      <div>
+        <div class="team-name" id="batTeamName">—</div>
+        <div class="team-abbr" id="batTeamAbbr">—</div>
+      </div>
+    </div>
+
+    <!-- Main score -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div class="score-main">
+        <div class="score-runs" id="currentScore">0<span class="wkts">/0</span></div>
+        <div class="score-overs" id="currentOvers">0.0 overs</div>
+        <div class="score-crr"  id="currentCRR">CRR: 0.00</div>
+      </div>
+
+      <div class="stats-row" style="justify-content:center">
+        <div class="stat-chip highlight">
+          <div class="sc-label">CRR</div>
+          <div class="sc-val" id="chipCRR">0.00</div>
+        </div>
+        <div class="stat-chip" id="rrrChip">
+          <div class="sc-label">RRR</div>
+          <div class="sc-val" id="chipRRR">—</div>
+        </div>
+        <div class="stat-chip">
+          <div class="sc-label">L3 RR</div>
+          <div class="sc-val" id="chipL3RR">—</div>
+        </div>
+        <div class="stat-chip good">
+          <div class="sc-label">WIH</div>
+          <div class="sc-val" id="chipWIH">10</div>
+        </div>
+        <div id="phaseIndicator" class="phase-indicator powerplay">
+          <span class="ph-dot"></span>Powerplay
+        </div>
+      </div>
+    </div>
+
+    <!-- VS separator -->
+    <div class="score-vs">vs</div>
+
+    <!-- Bowling team -->
+    <div class="team-score" style="flex-direction:row-reverse">
+      <div class="team-badge" id="bowlTeamBadge">?</div>
+      <div style="text-align:right">
+        <div class="team-name" id="bowlTeamName">—</div>
+        <div class="team-abbr" id="bowlTeamAbbr">—</div>
+      </div>
+    </div>
+
+    <!-- Target pill (innings 2 only) -->
+    <div class="target-pill" id="targetPill" style="display:none">
+      <div class="label">Target</div>
+      <div class="value" id="targetScore">—</div>
+      <div style="font-size:10px;color:#8899BB;margin-top:2px">RRR: <span id="rrr">—</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN GRID
+═══════════════════════════════════════════════════════════════ -->
+<main class="cr-grid">
+
+  <!-- ───────────────────────────────────────────────────────────
+       LEFT PANEL
+  ─────────────────────────────────────────────────────────────── -->
+  <aside class="left-panel">
+
+    <!-- Batsmen at crease -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">At the Crease</span>
+      </div>
+      <div class="cr-card__body" id="batsmenTable" style="padding:10px 14px">
+        <div class="empty-state">Waiting for match…</div>
+      </div>
+    </div>
+
+    <!-- Recent balls -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Recent Deliveries</span>
+        <span style="font-size:10px;color:#4D5F80">Last 18 balls</span>
+      </div>
+      <div class="ball-feed" id="ballFeed"></div>
+    </div>
+
+    <!-- Partnership -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Partnership</span>
+      </div>
+      <div class="cr-card__body">
+        <div class="partnership-box">
+          <div class="pship-stat">
+            <div class="ps-val" id="pshipRuns">0</div>
+            <div class="ps-label">Runs</div>
+          </div>
+          <div class="pship-stat">
+            <div class="ps-val" id="pshipBalls">0</div>
+            <div class="ps-label">Balls</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fall of wickets -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Fall of Wickets</span>
+      </div>
+      <div class="cr-card__body" style="padding:8px 14px">
+        <div class="fow-list" id="fowList">
+          <div class="empty-state" style="padding:12px">No wickets yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Over-by-over bars -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Runs per Over</span>
+        <span style="font-size:10px;color:#4D5F80" id="totalBalls">0 balls</span>
+      </div>
+      <div class="cr-card__body" style="padding:10px 14px 14px">
+        <div class="over-bars" id="overBars"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:#4D5F80">
+          <span>1</span><span>5</span><span>10</span><span>15</span><span>20</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ───────────────────────────────────────────────────────────
+       CENTRE PANEL
+  ─────────────────────────────────────────────────────────────── -->
+  <section class="centre-panel">
+
+    <!-- Hawkeye pitch map -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/>
+          </svg>
+          Hawkeye Pitch Map
+        </span>
+        <span style="font-size:10px;color:#4D5F80" id="statPitch">Flat</span>
+      </div>
+
+      <div class="hawkeye-wrap" id="hawkeyeWrap">
+        <canvas id="hawkeyeCanvas" width="260" height="455"></canvas>
+      </div>
+
+      <!-- Legend -->
+      <div class="hawkeye-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3A5080"></div>Dot</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>1 run</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FBBF24"></div>2-3</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10B981"></div>4</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#FFD700"></div>6</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#EF4444"></div>Wkt</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#F97316"></div>Wide</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#A855F7"></div>No Ball</div>
+      </div>
+    </div>
+
+    <!-- Pitch analytics -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Pitch Analytics</span>
+      </div>
+      <div class="cr-card__body">
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <div class="ac-val" id="statDotPct">—</div>
+            <div class="ac-label">Dot Ball %</div>
+          </div>
+          <div class="analytics-card">
+            <div class="ac-val" id="statBndyPct">—</div>
+            <div class="ac-label">Boundary %</div>
+          </div>
+          <div class="analytics-card">
+            <div class="ac-val" id="statSpinPct">—</div>
+            <div class="ac-label">Spin %</div>
+          </div>
+          <div class="analytics-card">
+            <div class="ac-val" id="statAvgDev">—</div>
+            <div class="ac-label">Avg Deviation</div>
+          </div>
+          <div class="analytics-card">
+            <div class="ac-val" id="statAvgSpd">—</div>
+            <div class="ac-label">Avg Pace</div>
+          </div>
+          <div class="analytics-card">
+            <div class="ac-val" id="statRPO">—</div>
+            <div class="ac-label">RPO</div>
+          </div>
+          <div class="analytics-card" style="grid-column:span 2">
+            <div class="ac-val" style="font-size:18px" id="statPitch2">—</div>
+            <div class="ac-label">Pitch Type</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score progression chart -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Score Progression &amp; Prediction</span>
+        <div style="display:flex;gap:10px;font-size:10px;align-items:center">
+          <span style="color:#00FF88">■ Cumulative</span>
+          <span style="color:#00D4FF">■ Per Over</span>
+          <span style="color:#FFD700">- - Prediction</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="scoreChart"></canvas>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ───────────────────────────────────────────────────────────
+       RIGHT PANEL
+  ─────────────────────────────────────────────────────────────── -->
+  <aside class="right-panel">
+
+    <!-- ML Prediction score -->
+    <div class="cr-card">
+      <div class="prediction-main">
+        <div class="pred-label">Predicted Final Score</div>
+        <div class="pred-score" id="predScore">—</div>
+        <div class="pred-range">
+          <span id="predLower">—</span> – <span id="predUpper">—</span>
+        </div>
+        <div style="font-size:10px;color:#4D5F80;margin-top:6px" id="predModel">Model: —</div>
+      </div>
+
+      <!-- Confidence -->
+      <div class="confidence-wrap">
+        <div class="confidence-label">
+          <span>Model Confidence</span>
+          <strong id="confPct">0%</strong>
+        </div>
+        <div class="confidence-bar-bg">
+          <div class="confidence-bar-fill" id="confBar" style="width:0%"></div>
+        </div>
+        <div style="font-size:10px;color:#4D5F80;margin-top:5px">
+          Confidence narrows as overs progress
+        </div>
+      </div>
+    </div>
+
+    <!-- Pressure index -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Pressure Index</span>
+      </div>
+      <div class="pressure-wrap">
+        <div class="pressure-label">
+          <span>Current pressure</span>
+          <strong id="pressureVal">0.00</strong> <span style="color:#4D5F80">/ 5.0</span>
+        </div>
+        <div class="pressure-bar-bg">
+          <div class="pressure-bar-fill" id="pressureBar" style="width:0%"></div>
+        </div>
+        <div style="font-size:10px;color:#4D5F80;margin-top:5px">
+          (RRR ÷ CRR) × wicket factor — higher = more pressure on batting team
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature importance -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Feature Importance</span>
+        <span style="font-size:10px;color:#4D5F80">What drives the prediction</span>
+      </div>
+      <div class="fi-list" id="featureImportance">
+        <div class="empty-state" style="padding:16px">Waiting for model…</div>
+      </div>
+    </div>
+
+    <!-- Model stats -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">Model Memory</span>
+        <span style="font-size:10px;color:#00FF88">● Learning</span>
+      </div>
+      <div class="model-info-grid">
+        <div class="mi-item">
+          <div class="mi-label">Training Samples</div>
+          <div class="mi-value" id="miSamples">—</div>
+        </div>
+        <div class="mi-item">
+          <div class="mi-label">Matches Learned</div>
+          <div class="mi-value" id="miMatches">—</div>
+        </div>
+        <div class="mi-item" style="grid-column:span 2">
+          <div class="mi-label">Algorithm</div>
+          <div class="mi-value" style="font-size:14px" id="miType">—</div>
+        </div>
+      </div>
+      <div class="update-ticker">
+        <span class="tick-dot"></span>
+        <span id="lastUpdate">Connecting…</span>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="cr-card">
+      <div class="cr-card__header">
+        <span class="cr-card__title">How It Works</span>
+      </div>
+      <div class="cr-card__body" style="font-size:12px;color:#8899BB;line-height:1.7">
+        <p style="margin-bottom:8px">
+          <span style="color:#00D4FF;font-weight:600">Hawkeye Pitch Map</span><br>
+          Every delivery is plotted by bounce coordinates, length zone, and seam/spin deviation.
+        </p>
+        <p style="margin-bottom:8px">
+          <span style="color:#FFD700;font-weight:600">Adaptive ML Model</span><br>
+          A GradientBoosting regressor re-trains after every over using accumulated match data.
+        </p>
+        <p>
+          <span style="color:#00FF88;font-weight:600">Continuous Learning</span><br>
+          Each completed match adds ground-truth samples to the persistent knowledge base — the model improves automatically.
+        </p>
+      </div>
+    </div>
+
+  </aside>
+
+</main>
+
+<!-- ── JS ──────────────────────────────────────────────────── -->
+<script src="{{ url_for('static', filename='js/cricket.js') }}"></script>
+
+<!-- Patch: also update statPitch2 whenever statPitch changes -->
+<script>
+  const _origSetText = window.setText;
+  document.addEventListener('DOMContentLoaded', () => {
+    // Mirror pitch type to analytics card
+    const obs = new MutationObserver(() => {
+      const v = document.getElementById('statPitch')?.textContent;
+      const e2 = document.getElementById('statPitch2');
+      if (e2 && v) e2.textContent = v;
+    });
+    const sp = document.getElementById('statPitch');
+    if (sp) obs.observe(sp, { childList: true, characterData: true, subtree: true });
+  });
+</script>
+
+</body>
+</html>
